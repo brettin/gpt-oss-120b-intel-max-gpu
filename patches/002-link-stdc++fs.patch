@@ -1,0 +1,15 @@
+diff --git a/ggml/src/CMakeLists.txt b/ggml/src/CMakeLists.txt
+index c8f3d859..8965b4e9 100644
+--- a/ggml/src/CMakeLists.txt
++++ b/ggml/src/CMakeLists.txt
+@@ -228,6 +228,10 @@ target_link_libraries(ggml PUBLIC ggml-base)
+ 
+ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+     target_link_libraries(ggml PRIVATE dl)
++    # Link experimental filesystem library for GCC 7
++    if (EXISTS "/usr/lib64/gcc/x86_64-suse-linux/7/libstdc++fs.a")
++        target_link_libraries(ggml PRIVATE "/usr/lib64/gcc/x86_64-suse-linux/7/libstdc++fs.a")
++    endif()
+ endif()
+ 
+ function(ggml_add_backend_library backend)

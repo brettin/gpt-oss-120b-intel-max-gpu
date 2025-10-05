@@ -1,0 +1,307 @@
+diff --git a/common/arg.cpp b/common/arg.cpp
+index a020ac44..088ff71a 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -22,7 +22,13 @@
+ #include <algorithm>
+ #include <climits>
+ #include <cstdarg>
++#if __has_include(<filesystem>)
+ #include <filesystem>
++namespace fs = std::filesystem;
++#else
++#include <experimental/filesystem>
++namespace fs = std::experimental::filesystem;
++#endif
+ #include <fstream>
+ #include <future>
+ #include <list>
+@@ -240,7 +246,7 @@ static std::string read_etag(const std::string & path) {
+     std::string none;
+     const std::string etag_path = path + ".etag";
+ 
+-    if (std::filesystem::exists(etag_path)) {
++    if (fs::exists(etag_path)) {
+         std::ifstream etag_in(etag_path);
+         if (!etag_in) {
+             LOG_ERR("%s: could not open .etag file for reading: %s\n", __func__, etag_path.c_str());
+@@ -255,7 +261,7 @@ static std::string read_etag(const std::string & path) {
+     // remove this code later
+     const std::string metadata_path = path + ".json";
+ 
+-    if (std::filesystem::exists(metadata_path)) {
++    if (fs::exists(metadata_path)) {
+         std::ifstream metadata_in(metadata_path);
+         try {
+             nlohmann::json metadata_json;
+@@ -265,7 +271,7 @@ static std::string read_etag(const std::string & path) {
+             if (metadata_json.contains("etag") && metadata_json.at("etag").is_string()) {
+                 std::string etag = metadata_json.at("etag");
+                 write_etag(path, etag);
+-                if (!std::filesystem::remove(metadata_path)) {
++                if (!fs::remove(metadata_path)) {
+                     LOG_WRN("%s: failed to delete old .json metadata file: %s\n", __func__, metadata_path.c_str());
+                 }
+                 return etag;
+@@ -384,8 +390,8 @@ static void common_curl_easy_setopt_get(CURL * curl) {
+ }
+ 
+ static bool common_pull_file(CURL * curl, const std::string & path_temporary) {
+-    if (std::filesystem::exists(path_temporary)) {
+-        const std::string partial_size = std::to_string(std::filesystem::file_size(path_temporary));
++    if (fs::exists(path_temporary)) {
++        const std::string partial_size = std::to_string(fs::file_size(path_temporary));
+         LOG_INF("%s: server supports range requests, resuming download from byte %s\n", __func__, partial_size.c_str());
+         const std::string range_str = partial_size + "-";
+         curl_easy_setopt(curl, CURLOPT_RANGE, range_str.c_str());
+@@ -435,7 +441,7 @@ static bool common_download_file_single_online(const std::string & url,
+         std::string etag;
+ 
+         // Check if the file already exists locally
+-        const auto file_exists = std::filesystem::exists(path);
++        const auto file_exists = fs::exists(path);
+         if (file_exists) {
+             etag = read_etag(path);
+         } else {
+@@ -491,14 +497,14 @@ static bool common_download_file_single_online(const std::string & url,
+ 
+             const std::string path_temporary = path + ".downloadInProgress";
+             if (should_download_from_scratch) {
+-                if (std::filesystem::exists(path_temporary)) {
++                if (fs::exists(path_temporary)) {
+                     if (remove(path_temporary.c_str()) != 0) {
+                         LOG_ERR("%s: unable to delete file: %s\n", __func__, path_temporary.c_str());
+                         return false;
+                     }
+                 }
+ 
+-                if (std::filesystem::exists(path)) {
++                if (fs::exists(path)) {
+                     if (remove(path.c_str()) != 0) {
+                         LOG_ERR("%s: unable to delete file: %s\n", __func__, path.c_str());
+                         return false;
+@@ -694,7 +700,7 @@ static bool common_download_file_single_online(const std::string & url,
+     }
+     cli.set_default_headers(default_headers);
+ 
+-    const bool file_exists = std::filesystem::exists(path);
++    const bool file_exists = fs::exists(path);
+ 
+     std::string last_etag;
+     if (file_exists) {
+@@ -755,9 +761,9 @@ static bool common_download_file_single_online(const std::string & url,
+         const std::string path_temporary = path + ".downloadInProgress";
+         size_t existing_size = 0;
+ 
+-        if (std::filesystem::exists(path_temporary)) {
++        if (fs::exists(path_temporary)) {
+             if (supports_ranges && !should_download_from_scratch) {
+-                existing_size = std::filesystem::file_size(path_temporary);
++                existing_size = fs::file_size(path_temporary);
+             } else if (remove(path_temporary.c_str()) != 0) {
+                 LOG_ERR("%s: unable to delete file: %s\n", __func__, path_temporary.c_str());
+                 return false;
+@@ -838,7 +844,7 @@ static bool common_download_file_single(const std::string & url,
+         return common_download_file_single_online(url, path, bearer_token);
+     }
+ 
+-    if (!std::filesystem::exists(path)) {
++    if (!fs::exists(path)) {
+         LOG_ERR("%s: required file is not available in cache (offline mode): %s\n", __func__, path.c_str());
+         return false;
+     }
+@@ -994,7 +1000,7 @@ static struct common_hf_file_res common_get_hf_file(const std::string & hf_repo_
+         }
+     }
+     if (res_code == 0) {
+-        if (std::filesystem::exists(cached_response_path)) {
++        if (fs::exists(cached_response_path)) {
+             LOG_WRN("trying to read manifest from cache: %s\n", cached_response_path.c_str());
+             res_str = read_file(cached_response_path);
+             res_code = 200;
+diff --git a/common/common.cpp b/common/common.cpp
+index c1e736c4..912c763d 100644
+--- a/common/common.cpp
++++ b/common/common.cpp
+@@ -18,7 +18,13 @@
+ #include <cstdarg>
+ #include <cstring>
+ #include <ctime>
++#if __has_include(<filesystem>)
+ #include <filesystem>
++namespace fs = std::filesystem;
++#else
++#include <experimental/filesystem>
++namespace fs = std::experimental::filesystem;
++#endif
+ #include <fstream>
+ #include <iostream>
+ #include <iterator>
+diff --git a/examples/model-conversion/logits.cpp b/examples/model-conversion/logits.cpp
+index 6dc33418..836092e4 100644
+--- a/examples/model-conversion/logits.cpp
++++ b/examples/model-conversion/logits.cpp
+@@ -4,7 +4,13 @@
+ #include <string>
+ #include <vector>
+ #include <ctype.h>
++#if __has_include(<filesystem>)
+ #include <filesystem>
++namespace fs = std::filesystem;
++#else
++#include <experimental/filesystem>
++namespace fs = std::experimental::filesystem;
++#endif
+ 
+ static void print_usage(int, char ** argv) {
+     printf("\nexample usage:\n");
+@@ -188,7 +194,7 @@ int main(int argc, char ** argv) {
+         printf("Vocab size: %d\n", n_logits);
+     }
+ 
+-    std::filesystem::create_directory("data");
++    fs::create_directory("data");
+ 
+     // Save logits to binary file
+     char bin_filename[512];
+diff --git a/ggml/src/ggml-backend-reg.cpp b/ggml/src/ggml-backend-reg.cpp
+index 136afec7..f2e8b383 100644
+--- a/ggml/src/ggml-backend-reg.cpp
++++ b/ggml/src/ggml-backend-reg.cpp
+@@ -3,7 +3,13 @@
+ #include "ggml-impl.h"
+ #include <algorithm>
+ #include <cstring>
++#if __has_include(<filesystem>)
+ #include <filesystem>
++namespace fs = std::filesystem;
++#else
++#include <experimental/filesystem>
++namespace fs = std::experimental::filesystem;
++#endif
+ #include <memory>
+ #include <string>
+ #include <type_traits>
+@@ -78,8 +84,6 @@
+ #    pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+ #endif
+ 
+-namespace fs = std::filesystem;
+-
+ static std::string path_str(const fs::path & path) {
+     std::string u8path;
+     try {
+@@ -533,7 +537,7 @@ static ggml_backend_reg_t ggml_backend_load_best(const char * name, bool silent,
+         }
+         fs::directory_iterator dir_it(search_path, fs::directory_options::skip_permission_denied);
+         for (const auto & entry : dir_it) {
+-            if (entry.is_regular_file()) {
++            if (fs::is_regular_file(entry.status())) {
+                 auto filename = entry.path().filename();
+                 auto ext = entry.path().extension();
+                 if (filename.native().find(file_prefix) == 0 && ext == file_extension) {
+diff --git a/ggml/src/ggml-rpc/ggml-rpc.cpp b/ggml/src/ggml-rpc/ggml-rpc.cpp
+index aad48d62..beab60f8 100644
+--- a/ggml/src/ggml-rpc/ggml-rpc.cpp
++++ b/ggml/src/ggml-rpc/ggml-rpc.cpp
+@@ -28,7 +28,13 @@
+ #endif
+ #include <cstring>
+ #include <fstream>
++#if __has_include(<filesystem>)
+ #include <filesystem>
++namespace fs = std::filesystem;
++#else
++#include <experimental/filesystem>
++namespace fs = std::experimental::filesystem;
++#endif
+ #include <algorithm>
+ 
+ static const char * RPC_DEBUG = std::getenv("GGML_RPC_DEBUG");
+diff --git a/tools/rpc/rpc-server.cpp b/tools/rpc/rpc-server.cpp
+index 08851561..0b1eb5b9 100644
+--- a/tools/rpc/rpc-server.cpp
++++ b/tools/rpc/rpc-server.cpp
+@@ -19,7 +19,13 @@
+ #include <string>
+ #include <stdio.h>
+ #include <vector>
++#if __has_include(<filesystem>)
+ #include <filesystem>
++namespace fs = std::filesystem;
++#else
++#include <experimental/filesystem>
++namespace fs = std::experimental::filesystem;
++#endif
+ #include <algorithm>
+ #include <thread>
+ #include <regex>
+diff --git a/tools/run/run.cpp b/tools/run/run.cpp
+index b90a7253..3acdf4ba 100644
+--- a/tools/run/run.cpp
++++ b/tools/run/run.cpp
+@@ -33,7 +33,13 @@
+ #include <cstdarg>
+ #include <cstdio>
+ #include <cstring>
++#if __has_include(<filesystem>)
+ #include <filesystem>
++namespace fs = std::filesystem;
++#else
++#include <experimental/filesystem>
++namespace fs = std::experimental::filesystem;
++#endif
+ #include <iostream>
+ #include <list>
+ #include <sstream>
+@@ -404,7 +410,7 @@ class HttpClient {
+   public:
+     int init(const std::string & url, const std::vector<std::string> & headers, const std::string & output_file,
+              const bool progress, std::string * response_str = nullptr) {
+-        if (std::filesystem::exists(output_file)) {
++        if (fs::exists(output_file)) {
+             return 0;
+         }
+ 
+@@ -420,8 +426,8 @@ class HttpClient {
+ 
+         if (!output_file.empty()) {
+             try {
+-                std::filesystem::rename(output_file_partial, output_file);
+-            } catch (const std::filesystem::filesystem_error & e) {
++                fs::rename(output_file_partial, output_file);
++            } catch (const fs::filesystem_error & e) {
+                 printe("Failed to rename '%s' to '%s': %s\n", output_file_partial.c_str(), output_file.c_str(), e.what());
+                 return 1;
+             }
+@@ -494,8 +500,8 @@ class HttpClient {
+ 
+     size_t set_resume_point(const std::string & output_file) {
+         size_t file_size = 0;
+-        if (std::filesystem::exists(output_file)) {
+-            file_size = std::filesystem::file_size(output_file);
++        if (fs::exists(output_file)) {
++            file_size = fs::file_size(output_file);
+             curl_easy_setopt(curl, CURLOPT_RESUME_FROM_LARGE, static_cast<curl_off_t>(file_size));
+         }
+ 
+@@ -568,8 +574,8 @@ class HttpClient {
+             }
+ 
+             size_t resume_offset = 0;
+-            if (!output_file.empty() && std::filesystem::exists(output_file)) {
+-                resume_offset = std::filesystem::file_size(output_file);
++            if (!output_file.empty() && fs::exists(output_file)) {
++                resume_offset = fs::file_size(output_file);
+                 if (resume_offset > 0) {
+                     headers.emplace("Range", "bytes=" + std::to_string(resume_offset) + "-");
+                 }
+@@ -970,7 +976,7 @@ class LlamaData {
+ 
+     int resolve_model(std::string & model_) {
+         int                            ret     = 0;
+-        if (string_starts_with(model_, "file://") || std::filesystem::exists(model_)) {
++        if (string_starts_with(model_, "file://") || fs::exists(model_)) {
+             rm_until_substring(model_, "://");
+ 
+             return ret;

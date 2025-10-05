@@ -1,0 +1,38 @@
+# Build artifacts
+llama.cpp/build/
+llama.cpp/.patches_applied
+*.o
+*.so
+*.a
+
+# Model files (too large for git)
+models/*.gguf
+
+# Vulkan SDK (can be downloaded)
+*.tar.xz
+
+# Test outputs (except test-results/)
+*.log
+!test-results/*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+ENV/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+*.tmp
