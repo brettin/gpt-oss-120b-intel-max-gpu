@@ -42,7 +42,8 @@ fi
 cd "$LLAMA_CPP_DIR"
 
 # Apply patches
-echo "Applying patches..."
+echo "current working dir: $(pwd -P)"
+echo "Applying patches from ${PATCHES_DIR} ..."
 if [ ! -f ".patches_applied" ]; then
     patch -p1 < "$PATCHES_DIR/001-fix-tokenization-byte-fallback.patch"
     patch -p1 < "$PATCHES_DIR/002-link-stdc++fs.patch"
