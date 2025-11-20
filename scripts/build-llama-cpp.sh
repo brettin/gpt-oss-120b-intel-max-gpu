@@ -54,6 +54,8 @@ else
     echo "Patches already applied, skipping..."
 fi
 
+echo "Done applying patches"
+
 # Clean previous build
 if [ -d "build" ]; then
     echo "Cleaning previous build..."
