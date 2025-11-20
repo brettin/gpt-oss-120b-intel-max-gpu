@@ -6,7 +6,7 @@ set -e
 # Configuration
 LLAMA_CPP_REPO="https://github.com/ggml-org/llama.cpp"
 LLAMA_CPP_DIR="llama.cpp"
-PATCHES_DIR="../patches"
+PATCHES_DIR="$(pwd -P)/../patches"
 VULKAN_SDK_DIR="$(pwd -P)/1.4.328.1"
 
 echo "=== Building llama.cpp with SYCL support for Intel MAX GPU 1550 ==="
