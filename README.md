@@ -36,8 +36,7 @@ GPT-OSS-120B is a 116.8 billion parameter Mixture of Experts (MoE) model release
 - ~60 GB free disk space for model
 
 
-    On Aurora, it looks like oneAPI is at 2025.2.0
-    On Aurora, need to module load cmake
+
 
 ## Quick Start
 
@@ -49,8 +48,7 @@ cd scripts
 ```
 
 
-    chmod u+x 1.4.328.1/setup-env.sh 
-    source 1.4.328.1/setup-env.sh
+
 
 
 ### 2. Build llama.cpp with SYCL
@@ -69,8 +67,6 @@ This script will:
 
 ### 3. Download GPT-OSS-120B Model
 
-    URLs inside download-gpt-oss-120b.sh are wrong. This worked for part 2 of 2:
-    https://huggingface.co/unsloth/gpt-oss-120b-GGUF/resolve/main/Q4_K_M/gpt-oss-120b-Q4_K_M-00002-of-00002.gguf
 
 
 ```bash
