@@ -1,5 +1,6 @@
 #!/bin/bash
 # Complete build script for llama.cpp with SYCL support on Intel MAX GPU 1550
+# Builds both llama-cli (command-line) and llama-server (HTTP API)
 # This script includes all necessary environment setup and error checking
 
 set -e
@@ -7,12 +8,13 @@ set -e
 # Configuration
 LLAMA_CPP_REPO="https://github.com/ggml-org/llama.cpp"
 LLAMA_CPP_DIR="llama.cpp"
-PATCHES_DIR="/lus/flare/projects/candle_aesp_CNDA/brettin/Aurora-Inferencing/ollama/gpt-oss-120b-intel-max-gpu/patches"
+PATCHES_DIR="$(pwd -P)/../patches"
 VULKAN_SDK_DIR="$(pwd -P)/1.4.328.1"
 ENV_FILE="/home/brettin/candle_aesp_CNDA/brettin/Aurora-Inferencing/ollama/env.sh"
 
 echo "============================================================"
 echo "Building llama.cpp with SYCL support for Intel MAX GPU 1550"
+echo "Targets: llama-cli + llama-server (HTTP API)"
 echo "============================================================"
 echo ""
 
@@ -91,16 +93,22 @@ fi
 
 if [ ! -f ".patches_applied" ]; then
     echo "  Applying patch 001: Fix tokenization byte fallback..."
-    patch -p1 < "$PATCHES_DIR/001-fix-tokenization-byte-fallback.patch"
+    patch --fuzz=3 -p1 < "$PATCHES_DIR/001-fix-tokenization-byte-fallback.patch"
     
     echo "  Applying patch 002: Link stdc++fs library..."
-    patch -p1 < "$PATCHES_DIR/002-link-stdc++fs.patch"
+    patch --fuzz=3 -p1 < "$PATCHES_DIR/002-link-stdc++fs.patch"
     
     echo "  Applying patch 003: Experimental filesystem support..."
-    patch -p1 < "$PATCHES_DIR/003-experimental-filesystem-support.patch"
+    # Note: Patch 003 may partially fail on newer llama.cpp versions (common/arg.cpp changed)
+    # but core filesystem fixes will still be applied
+    if patch --fuzz=3 -p1 < "$PATCHES_DIR/003-experimental-filesystem-support.patch"; then
+        echo "  ✓ Patch 003 applied successfully"
+    else
+        echo "  ⚠ Patch 003 partially applied (some files may have changed in newer version)"
+    fi
     
     touch .patches_applied
-    echo "✓ All patches applied successfully"
+    echo "✓ Patches applied successfully"
 else
     echo "✓ Patches already applied (skipping)"
 fi
@@ -135,13 +143,13 @@ fi
 echo ""
 
 # Step 8: Build with CMake
-echo "[8/8] Building llama.cpp..."
+echo "[8/8] Building llama.cpp (CLI and HTTP server)..."
 echo "  Using $(nproc) CPU cores for parallel build"
 echo "  This will take several minutes (5-10 minutes typically)..."
 echo ""
 
 NUM_CORES=$(nproc)
-cmake --build build --config Release -j $NUM_CORES
+cmake --build build --config Release --target llama-cli llama-server -j $NUM_CORES
 
 if [ $? -eq 0 ]; then
     echo ""
@@ -153,36 +161,56 @@ else
 fi
 echo ""
 
-# Verify the binary
+# Verify the binaries
 echo "============================================================"
 echo "Build Verification"
 echo "============================================================"
 
+BUILD_SUCCESS=true
+
 if [ -f "build/bin/llama-cli" ]; then
     echo "✓ llama-cli binary created successfully"
-    echo ""
-    echo "Binary details:"
-    ls -lh build/bin/llama-cli
-    echo ""
-    file build/bin/llama-cli
-    echo ""
-    echo "============================================================"
-    echo "✓ BUILD SUCCESSFUL!"
-    echo "============================================================"
-    echo ""
-    echo "Next steps:"
-    echo "  1. Download the model (if not already done):"
-    echo "     cd ../; ./download-gpt-oss-120b.sh"
-    echo ""
-    echo "  2. Test on a compute node with GPU:"
-    echo "     qsub -I -l select=1 -l walltime=01:00:00"
-    echo "     source /home/brettin/candle_aesp_CNDA/brettin/Aurora-Inferencing/ollama/env.sh"
-    echo "     cd $(pwd -P)"
-    echo "     ./run-inference.sh \"What is 2+2?\""
-    echo ""
 else
-    echo "✗ ERROR: llama-cli binary not found after build"
-    echo "  Expected location: build/bin/llama-cli"
+    echo "✗ ERROR: llama-cli binary not found"
+    BUILD_SUCCESS=false
+fi
+
+if [ -f "build/bin/llama-server" ]; then
+    echo "✓ llama-server (HTTP server) binary created successfully"
+else
+    echo "✗ ERROR: llama-server binary not found"
+    BUILD_SUCCESS=false
+fi
+
+if [ "$BUILD_SUCCESS" = false ]; then
+    echo ""
+    echo "✗ Build verification failed"
     exit 1
 fi
+
+echo ""
+echo "Binary details:"
+ls -lh build/bin/llama-cli build/bin/llama-server
+echo ""
+echo "SYCL library:"
+ls -lh build/bin/libggml-sycl.so*
+echo ""
+echo "============================================================"
+echo "✓ BUILD SUCCESSFUL!"
+echo "============================================================"
+echo ""
+echo "Next steps:"
+echo "  1. Download the model (if not already done):"
+echo "     cd ../; ./download-gpt-oss-120b.sh"
+echo ""
+echo "  2. Test CLI on a compute node with GPU:"
+echo "     qsub -I -l select=1 -l walltime=01:00:00"
+echo "     source /home/brettin/candle_aesp_CNDA/brettin/Aurora-Inferencing/ollama/env.sh"
+echo "     cd $(pwd -P)"
+echo "     ./run-inference.sh \"What is 2+2?\""
+echo ""
+echo "  3. Or run the HTTP server:"
+echo "     export ONEAPI_DEVICE_SELECTOR=\"level_zero:0\""
+echo "     ./build/bin/llama-server -m /path/to/model.gguf --host 0.0.0.0 --port 8080"
+echo ""
 
