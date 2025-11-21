@@ -4,8 +4,8 @@
 set -e
 
 MODEL_NAME="gpt-oss-120b-Q4_K_M"
-MODEL_URL_PART1="https://huggingface.co/unsloth/gpt-oss-120b-GGUF/resolve/main/gpt-oss-120b-Q4_K_M-00001-of-00002.gguf"
-MODEL_URL_PART2="https://huggingface.co/unsloth/gpt-oss-120b-GGUF/resolve/main/gpt-oss-120b-Q4_K_M-00002-of-00002.gguf"
+MODEL_URL_PART1="https://huggingface.co/unsloth/gpt-oss-120b-GGUF/resolve/main/Q4_K_M/gpt-oss-120b-Q4_K_M-00001-of-00002.gguf"
+MODEL_URL_PART2="https://huggingface.co/unsloth/gpt-oss-120b-GGUF/resolve/main/Q4_K_M/gpt-oss-120b-Q4_K_M-00002-of-00002.gguf"
 MODELS_DIR="../models"
 
 echo "=== Downloading GPT-OSS-120B model ==="
