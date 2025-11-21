@@ -9,7 +9,11 @@ llama.cpp/.patches_applied
 models/*.gguf
 
 # Vulkan SDK (can be downloaded)
+scripts/1.4.328.1/
 *.tar.xz
+
+# llama.cpp repository (cloned/built locally)
+scripts/llama.cpp/
 
 # Test outputs (except test-results/)
 *.log
