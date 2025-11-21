@@ -53,6 +53,9 @@ export ONEAPI_DEVICE_SELECTOR="level_zero:0"
 
 cd "$LLAMA_CPP_DIR"
 
+# Set library path for libllama.so
+export LD_LIBRARY_PATH="$(pwd)/llama.cpp/build/bin:$LD_LIBRARY_PATH"
+
 echo "Model: $MODEL_PATH (+ part 2)"
 echo "Prompt: $PROMPT"
 echo "GPU Layers: $GPU_LAYERS"
